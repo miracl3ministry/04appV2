@@ -1,0 +1,143 @@
+extends layout
+
+block script
+    script(type="module", src='/javascripts/admin.js')
+
+block content
+    .row.header
+        .col-4
+            h1 Добро пожаловать #{login}
+        .col-7
+            button(data-bs-toggle="modal", data-bs-target="#modalAdd") Добавить товар
+            button() Импорт из Excel
+            button() Экспорт в Excel
+            br
+            input(type="search")
+            button(type="search") Поиск
+        .col-1
+            a(href="/admin/logout") Выход
+    .row
+        .col-12
+            .content
+                table.table.table-striped
+                    thead
+                        th(data-name="id") ID
+                        th(data-name="name") Название
+                        th(data-name="manufacturer") Производитель
+                        th(data-name="code") Артикул
+                        th(data-name="modification-code") Артикул модификации
+                        th(data-name="model") Модель
+                        th(data-name="price") Цена
+                        th(data-name="count") Количество
+                        th(data-name="rack") Стеллаж
+                        th(data-name="shelf") Полка
+                    tbody#table
+    <!-- modal -->
+    .modal.fade#modalAdd(tabindex="-1", aria-hidden="true")
+        .modal-dialog
+            .modal-content
+                .modal-header
+                    h4.modal-title Добавление товара
+                    button.btn-close(type="button", data-bs-dismiss="modal", aria-label="Close")
+                .modal-body
+                    form.modalAddForm(name="modalAddForm")
+                        .mb-3
+                            label.col-form-label Название
+                            input.form-control(name="name", required="")
+                        .mb-3
+                            label.col-form-label Производитель
+                            input.form-control(name="manufacturer", required="")
+                        .mb-3
+                            label.col-form-label Артикул
+                            input.form-control(name="code", required="")
+                        .mb-3
+                            label.col-form-label Артикул модификации
+                            input.form-control(name="modificationCode")
+                        .mb-3
+                            label.col-form-label Модель
+                            input.form-control(name="model", required="")
+                        .mb-3
+                            label.col-form-label Цена
+                            input.form-control(name="price")
+                        .mb-3
+                            label.col-form-label Количество
+                            input.form-control(name="count", required="")
+                        .mb-3
+                            label.col-form-label Стеллаж
+                            input.form-control(name="rack", required="")
+                        .mb-3
+                            label.col-form-label Полка
+                            input.form-control(name="shelf", required="")
+                        .mb-3
+                            label.col-form-label Описание
+                            textarea.form-control(name="description", required="")
+                        .mb-3
+                            label.col-form-label Характеристики
+                            textarea.form-control(name="specifications", required="")
+                .modal-footer
+                    button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Закрыть
+                    button.btn.btn-primary#btnAddProduct(type="button") Добавить
+
+    .modal.fade#modalUpdate(tabindex="-1", aria-hidden="true")
+        .modal-dialog
+            .modal-content
+                .modal-header
+                    h4.modal-title Изменение товара
+                    button.btn-close(type="button", data-bs-dismiss="modal", aria-label="Close")
+                .modal-body
+                    form.modalAddForm(name="modalUpdateForm")
+                        .mb-3
+                            label.col-form-label Название
+                            input.form-control(name="name", required="")
+                        .mb-3
+                            label.col-form-label Производитель
+                            input.form-control(name="manufacturer", required="")
+                        .mb-3
+                            label.col-form-label Артикул
+                            input.form-control(name="code", required="")
+                        .mb-3
+                            label.col-form-label Артикул модификации
+                            input.form-control(name="modificationCode")
+                        .mb-3
+                            label.col-form-label Модель
+                            input.form-control(name="model", required="")
+                        .mb-3
+                            label.col-form-label Цена
+                            input.form-control(name="price")
+                        .mb-3
+                            label.col-form-label Количество
+                            input.form-control(name="count", required="")
+                        .mb-3
+                            label.col-form-label Стеллаж
+                            input.form-control(name="rack", required="")
+                        .mb-3
+                            label.col-form-label Полка
+                            input.form-control(name="shelf", required="")
+                        .mb-3
+                            label.col-form-label Описание
+                            textarea.form-control(name="description", required="")
+                        .mb-3
+                            label.col-form-label Характеристики
+                            textarea.form-control(name="specifications", required="")
+                        input.form-control(name="id", required="", type="hidden")
+                .modal-footer
+                    button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Закрыть
+                    button.btn.btn-primary#btnUpdateProduct(type="button") Обновить
+    .modal.fade#modalDelete(tabindex="-1", aria-hidden="true")
+        .modal-dialog
+            .modal-content
+                .modal-header
+                    h4.modal-title Удаление товара
+                    button.btn-close(type="button", data-bs-dismiss="modal", aria-label="Close")
+                .modal-body
+                    form.modalAddForm(name="modalDeleteForm")
+                        p Вы действительно хотите удалить товар?
+                        input.form-control(name="id", required="", type="hidden")
+                .modal-footer
+                    button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Закрыть
+                    button.btn.btn-primary#btnDeleteProduct(type="button") Удалить
+    <!-- toast -->
+    .toast.align-items-center.text-white.bg-danger.border-0(role="alert", aria-live="assertive", aria-atomic="true", style="position: absolute; top: 20px; right: 50px;")
+        .d-flex
+            .toast-body
+            button.btn-close.btn-close-white.me-2.m-auto(type="button",data-bs-dismiss="toast" ,ria-label="Close")
