@@ -295,6 +295,4 @@ function waitTimeoutXlsParse(ms = 500, callback) {
 module.exports = router;
 
 // if first start
-if (!database.read('db', 'users', {login: 'admin'})) {
-    database.createUser({login: 'admin', password: 'admin'});
-}
+database.createUser({login: 'admin', password: 'admin'});
