@@ -5,16 +5,17 @@ block script
 
 block content
     .row.header
-        .col-4
-            h1 Добро пожаловать #{login}
-        .col-7
+        .col-3
+            p Товаров в базе данных: #{dbCount}
+        .col-3
             button(data-bs-toggle="modal", data-bs-target="#modalAdd") Добавить товар
-            button() Импорт из Excel
-            button() Экспорт в Excel
-            br
-            input(type="search")
-            button(type="search") Поиск
+            button(data-bs-toggle="modal", data-bs-target="#modalUploadXlsx") Импорт из Excel
+            button#btnUnloadXlsx Экспорт в Excel
+        .col-5
+            input.w-50(type="search", placeholder="Поиск", class='ml-3')
+            //button(type="search") Поиск
         .col-1
+            p.mb-0 #{login}
             a(href="/admin/logout") Выход
     .row
         .col-12
@@ -29,6 +30,7 @@ block content
                         th(data-name="model") Модель
                         th(data-name="price") Цена
                         th(data-name="count") Количество
+                        th(data-name="warehouse") Склад
                         th(data-name="rack") Стеллаж
                         th(data-name="shelf") Полка
                     tbody#table
@@ -58,16 +60,19 @@ block content
                             input.form-control(name="model", required="")
                         .mb-3
                             label.col-form-label Цена
-                            input.form-control(name="price")
+                            input.form-control(name="price", type="number")
                         .mb-3
                             label.col-form-label Количество
-                            input.form-control(name="count", required="")
+                            input.form-control(name="count", required="", type="number")
+                        .mb-3
+                            label.col-form-label Склад
+                            input.form-control(name="warehouse", required="")
                         .mb-3
                             label.col-form-label Стеллаж
-                            input.form-control(name="rack", required="")
+                            input.form-control(name="rack", required="", type="number")
                         .mb-3
                             label.col-form-label Полка
-                            input.form-control(name="shelf", required="")
+                            input.form-control(name="shelf", required="", type="number")
                         .mb-3
                             label.col-form-label Описание
                             textarea.form-control(name="description", required="")
@@ -103,16 +108,19 @@ block content
                             input.form-control(name="model", required="")
                         .mb-3
                             label.col-form-label Цена
-                            input.form-control(name="price")
+                            input.form-control(name="price", type="number")
                         .mb-3
                             label.col-form-label Количество
-                            input.form-control(name="count", required="")
+                            input.form-control(name="count", required="", type="number")
+                        .mb-3
+                            label.col-form-label Склад
+                            input.form-control(name="warehouse", required="")
                         .mb-3
                             label.col-form-label Стеллаж
-                            input.form-control(name="rack", required="")
+                            input.form-control(name="rack", required="", type="number")
                         .mb-3
                             label.col-form-label Полка
-                            input.form-control(name="shelf", required="")
+                            input.form-control(name="shelf", required="", type="number")
                         .mb-3
                             label.col-form-label Описание
                             textarea.form-control(name="description", required="")
@@ -133,11 +141,21 @@ block content
                     form.modalAddForm(name="modalDeleteForm")
                         p Вы действительно хотите удалить товар?
                         input.form-control(name="id", required="", type="hidden")
+                        input.form-control(name="placeInArr", required="", type="hidden")
                 .modal-footer
                     button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Закрыть
                     button.btn.btn-primary#btnDeleteProduct(type="button") Удалить
-    <!-- toast -->
-    .toast.align-items-center.text-white.bg-danger.border-0(role="alert", aria-live="assertive", aria-atomic="true", style="position: absolute; top: 20px; right: 50px;")
-        .d-flex
-            .toast-body
-            button.btn-close.btn-close-white.me-2.m-auto(type="button",data-bs-dismiss="toast" ,ria-label="Close")
+    .modal.fade#modalUploadXlsx(tabindex="-1", aria-hidden="true")
+        .modal-dialog
+            .modal-content
+                .modal-header
+                    h4.modal-title Импорт из excel
+                    button.btn-close(type="button", data-bs-dismiss="modal", aria-label="Close")
+                .modal-body
+                    form.modalUploadXlsxForm(name="modalUploadXlsx", action="/app/uploadxlsx", method="post", encType="multipart/form-data")
+                        p Загрузите файл
+                        input(type="file", name="file", accept="application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                        input(type="submit", class="d-none")
+                .modal-footer
+                    button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Закрыть
+                    button.btn.btn-primary#btnUploadXlsx(type="button") Загрузить

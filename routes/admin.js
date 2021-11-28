@@ -11,32 +11,35 @@ router.get('/', (req, res) => {
     checkUuid(req.headers.cookie, (err, data) => {
         if (err) res.sendStatus(400);
         if (data) {
-            res.render('admin', {login: user.login});
+            database.findMaxId().then(count => {
+                res.render('admin', {
+                    login: user.login,
+                    dbCount: count,
+                });
+            });
         } else {
             res.render('login');
         }
     })
 });
 router.post("/login", jsonParser, (req, res) => {
+    console.log(req.body);
     if (!req.body) return res.sendStatus(400)
     if (req.body.login && req.body.password) {
         isLogin(req.body.login, req.body.password, (err, ans) => {
             if (err) res.sendStatus(500)
             if (uuid.validate(ans)) {
-                console.log(ans)
-                res.header({"Set-Cookie": `UUID=${ans}; Max-Age=2592000; Secure`})
+                res.header({"Set-Cookie": `UUID=${ans}; path=/; Max-Age=2592000; Secure`})
                 res.send("Reload");
             } else {
                 res.send(ans);
             }
         });
-    } else {
-        res.send("Ошибка: пустое поле");
-    }
+    } else res.send("Ошибка: пустое поле");
 })
 router.get("/logout", (req, res) => {
     user.isLogined = false;
-    res.header({"Set-Cookie": `UUID=''; Max-Age=1; Secure`});
+    res.clearCookie('UUID');
     res.redirect("../");
 })
 
@@ -63,7 +66,6 @@ async function checkUuid(cookie, callback) {
         callback(null, false);
     }
 }
-
 async function isLogin(login, pass, callback) {
     database.checkPassword(login, pass)
         .catch(e => console.log(e))

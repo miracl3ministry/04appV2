@@ -1,22 +1,28 @@
 "use strict";
 import '/bootstrap/js/bootstrap.js';
 
-const goodsOrder = ['id', 'name', 'manufacturer', 'code', 'modificationCode', 'model', 'price', 'count', 'rack', 'shelf'];
-let table, maxID;
+const goodsOrder = ['id', 'name', 'manufacturer', 'code', 'modificationCode', 'model', 'price', 'count', 'warehouse', 'rack', 'shelf'];
+let table;
+let tableSettings = {
+    timeout: false,
+}
 
 function getFetchData(path, data, callback) {
     fetch(path, {
         method: 'POST',
+        credentials: "same-origin",
         headers: {
             'Content-Type': 'application/json',
+            cookie: document.cookie,
         },
+        cache: "no-cache",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
         body: JSON.stringify(data)
     }).catch(err => displayError(err))
         .then(async (resolve) => {
             try {
                 if (resolve.status === 200) {
                     let ans = await resolve.json();
-                    // console.log(ans);
                     callback(null, ans);
                 } else {
                     throw new Error('Ответ сети был не ok.');
@@ -28,33 +34,30 @@ function getFetchData(path, data, callback) {
             }
         })
 }
-function displayError(text, color = "red") {
-    if (text) {
-        let toastText = document.querySelector(".toast-body");
-        toastText.innerText = text.toString();
-        let toastEl = document.querySelector(".toast");
-        if (color === "green") {
-            toastEl.classList.remove("bg-danger");
-            toastEl.classList.add("bg-success");
-        } else {
-            toastEl.classList.remove("bg-success");
-            toastEl.classList.add("bg-danger");
-        }
-        if (window.toastWindow) {
-            toastWindow.show();
-        } else {
-            window.toastWindow = new bootstrap.Toast(toastEl);
-            toastWindow.show();
-        }
+function displayError(text = "Ошибка", color = "red") {
+    let toastText = document.querySelector(".toast-body");
+    toastText.innerText = text.toString();
+    let toastEl = document.querySelector(".toast");
+    if (color === "green") {
+        toastEl.classList.remove("bg-danger");
+        toastEl.classList.add("bg-success");
+    } else {
+        toastEl.classList.remove("bg-success");
+        toastEl.classList.add("bg-danger");
+    }
+    if (window.toastWindow) {
+        toastWindow.show();
+    } else {
+        window.toastWindow = new bootstrap.Toast(toastEl);
+        toastWindow.show();
     }
 }
-
 function printHtmlTable(data) {
     document.getElementById("table").innerText = "";
     for (let i in data) {
         let tableRow = document.createElement("tr");
         tableRow.dataset.id = data[i].id;
-        let hiddenRow = addCollapsedRow(data[i]);
+        let hiddenRow = addCollapsedRow(data[i], i);
         tableRow.addEventListener("click", (e) => {
             if (tableRow.dataset.opened === 'true') {
                 tableRow.dataset.opened = 'false';
@@ -79,7 +82,7 @@ function printHtmlTd(obj, el) {
         el.append(td);
     }
 }
-function addCollapsedRow(data) {
+function addCollapsedRow(data, placeInTableArr) {
     let td = document.createElement("td");
     td.setAttribute("colspan", "10");
     let div = document.createElement('div');
@@ -127,7 +130,7 @@ function addCollapsedRow(data) {
     a2.dataset.bsTarget = "#modalDelete";
     a2.addEventListener('click', e => {
         e.preventDefault();
-        deleteItem(data.id, e);
+        deleteItem(data.id, placeInTableArr);
     })
     linksDiv.append(a2);
     div.append(linksDiv);
@@ -145,26 +148,58 @@ function updateItem(dataID) {
     for (let key of goodsOrder) {
         form.querySelector(`input[name=${key}]`).value = table[dataID][key] ?? '';
     }
-    form.querySelector("textarea[name=description]").value = table[dataID][description] ?? '';
-    form.querySelector("textarea[name=specifications]").value = table[dataID][specifications] ?? '';
+    form.querySelector("textarea[name=description]").value = table[dataID]['description'] ?? '';
+    form.querySelector("textarea[name=specifications]").value = table[dataID]['specifications'] ?? '';
 }
-function deleteItem(dataID, el) {
+function deleteItem(dataID, dataPlaceInTableArr) {
     let form = document.forms.modalDeleteForm;
-    form.querySelector('input[name=id]').value = table[dataID].id;
+    form.querySelector('input[name=id]').value = dataID;
+    form.querySelector('input[name=placeInArr]').value = dataPlaceInTableArr;
+}
+async function gettable(search = false, page = 1, order = null) {
+    if (!tableSettings.timeout) {
+        tableSettings.search = search;
+        tableSettings.page = page;
+        tableSettings.order = order;
+        getFetchData('/app/gettable', {search: search, page: page, order: order}, (err, data) => {
+            if (err) {
+                console.log(err)
+            } else {
+                if (!Array.isArray(data)) {
+                    data = [data];
+                }
+                table = data;
+                printHtmlTable(data);
+            }
+        })
+    }
+}
+async function getNextTablePage() {
+    if (!tableSettings.timeout) {
+        tableSettings.page += 1;
+        tableSettings.timeout = true;
+        getFetchData('/app/gettable', {
+            search: tableSettings.search,
+            page: tableSettings.page,
+            order: tableSettings.order
+        }, (err, data) => {
+            if (err) {
+                console.log(err)
+            } else {
+                if (!Array.isArray(data)) {
+                    data = [data];
+                }
+                table.push(...data);
+                printHtmlTable(table);
+            }
+        })
+        setTimeout(() => {
+            tableSettings.timeout = false;
+        }, 1000)
+    }
 }
 
-getFetchData('/app/gettable', {search: false, page: 1, order: null}, (err, data) => {
-    if (err) {
-        console.log(err)
-    } else {
-        if (!Array.isArray(data)) {
-            data = [data];
-        }
-        table = data;
-        console.log(table)
-        printHtmlTable(data);
-    }
-})
+// header buttons
 document.getElementById("btnAddProduct").addEventListener("click", () => {
     let form = document.forms.modalAddForm;
     if (form.querySelector("input[name=name]").value == "") {
@@ -180,6 +215,7 @@ document.getElementById("btnAddProduct").addEventListener("click", () => {
         model: form.querySelector("input[name=model]").value,
         price: form.querySelector("input[name=price]").value,
         count: form.querySelector("input[name=count]").value,
+        warehouse: form.querySelector("input[name=warehouse]").value,
         rack: form.querySelector("input[name=rack]").value,
         shelf: form.querySelector("input[name=shelf]").value,
         description: form.querySelector("textarea[name=description]").value,
@@ -189,7 +225,6 @@ document.getElementById("btnAddProduct").addEventListener("click", () => {
         if (err) {
             displayError(err)
         } else {
-            console.log(data);
             displayError(data.message, data.color);
             if (data.status === 'ok') {
                 jsonData.id = table.length;
@@ -221,6 +256,7 @@ document.getElementById('btnUpdateProduct').addEventListener("click", () => {
         model: form.querySelector("input[name=model]").value,
         price: form.querySelector("input[name=price]").value,
         count: form.querySelector("input[name=count]").value,
+        warehouse: form.querySelector("input[name=warehouse]").value,
         rack: form.querySelector("input[name=rack]").value,
         shelf: form.querySelector("input[name=shelf]").value,
         description: form.querySelector("textarea[name=description]").value,
@@ -229,7 +265,7 @@ document.getElementById('btnUpdateProduct').addEventListener("click", () => {
     getFetchData('/app/update', jsonData, (err, data) => {
         if (err) {
             displayError(err)
-        } else  {
+        } else {
             displayError(data.message, data.color);
             if (data.status === 'ok') {
                 table[jsonData.id] = jsonData;
@@ -248,6 +284,7 @@ document.getElementById('btnDeleteProduct').addEventListener("click", () => {
     let form = document.forms.modalDeleteForm;
     let jsonData = {
         id: form.querySelector("input[name=id]").value,
+        placeInArr: form.querySelector('input[name=placeInArr]').value,
     }
     getFetchData('/app/delete', jsonData, (err, data) => {
         if (err) {
@@ -255,7 +292,7 @@ document.getElementById('btnDeleteProduct').addEventListener("click", () => {
         } else {
             displayError(data.message, data.color);
             if (data.status === 'ok') {
-                delete table[jsonData.id];
+                delete table[jsonData.placeInArr];
                 printHtmlTable(table);
             }
         }
@@ -266,3 +303,52 @@ document.getElementById('btnDeleteProduct').addEventListener("click", () => {
 document.getElementById('modalDelete').addEventListener("hide.bs.modal", () => {
     document.forms.modalDeleteForm.reset()
 })
+document.getElementById('btnUploadXlsx').addEventListener("click", () => {
+    document.forms.modalUploadXlsx.submit();
+    document.forms.modalUploadXlsx.reset();
+    document.getElementById('modalDelete').querySelector(".btn-close").click();
+})
+document.getElementById('modalUploadXlsx').addEventListener("hide.bs.modal", () => {
+    document.forms.modalUploadXlsx.reset()
+})
+document.getElementById('btnUnloadXlsx').addEventListener("click", () => {
+    getFetchData('/app/unloadxlsx', {}, (err, data) => {
+        if (err) {
+            displayError(err)
+        } else {
+            window.open('/xls/' + data.message, '_blank');
+            displayError(data.message, data.color);
+        }
+    })
+})
+// scroll event
+document.addEventListener("scroll", (e) => {
+    if (window.pageYOffset + document.documentElement.clientHeight >= document.body.offsetHeight) {
+        getNextTablePage();
+    }
+})
+// table header sort events
+document.querySelectorAll('th').forEach(el => {
+    el.addEventListener('click', (e) => {
+        if (e.target.dataset.arrow === 'up') {
+            e.target.dataset.arrow = 'down';
+            gettable(tableSettings.search, 1, [el.dataset.name, 1]);
+        } else if (e.target.dataset.arrow === 'down') {
+            e.target.dataset.arrow = 'none';
+        } else {
+            e.target.dataset.arrow = 'up';
+            gettable(tableSettings.search, 1, [el.dataset.name, -1]);
+        }
+    })
+})
+// live search
+document.querySelector('input[type="search"]').addEventListener('input', (el) => {
+    console.log(el.target.value);
+    if (el.target.value.length > 2) {
+        gettable(el.target.value);
+    } else {
+        gettable(false);
+    }
+})
+// startup
+gettable();

@@ -11,6 +11,8 @@ class Database {
         this.mongoClient = new MongoClient(this.uri);
         Database.instance = this;
     }
+
+    // DB CRUD
     async create(dbName, collectionName, data) {
         try {
             await this.mongoClient.connect();
@@ -71,6 +73,65 @@ class Database {
             await this.mongoClient.close();
         }
     }
+    async createMany(dbName, collectionName, dataArr) {
+        try {
+            await this.mongoClient.connect();
+            const collection = await this.mongoClient.db(dbName).collection(collectionName);
+            console.log("Connected successfully to server");
+            // let len = dataArr.length;
+            // for (let i = 0; i < len; i += 1000) {
+            //     let arr = dataArr.slice(i, i+1000);
+            //     console.log(arr.length, i, i+1000);
+            //     collection.insertMany(arr).then((err, a) => {
+            //         console.log(err, a);
+            //     });
+            // }
+            await collection.insertMany(dataArr);
+            return 0;
+        } catch (e) {
+            console.log(`Mongo module error: ${e}`);
+        } finally {
+            await this.mongoClient.close();
+        }
+    }
+    async deleteMany(dbName, collectionName, filter) {
+        try {
+            await this.mongoClient.connect();
+            const collection = this.mongoClient.db(dbName).collection(collectionName);
+            console.log("Connected successfully to server");
+            await collection.deleteMany(filter);
+            return 0;
+        } catch (e) {
+            console.log(`Mongo module error: ${e}`);
+        } finally {
+            await this.mongoClient.close();
+        }
+    }
+    async readPage(filter, project, sort = {'id': 1}, page = 1) {
+        try {
+            if (!(Number.isInteger(page) && page > 0)) {
+                throw new Error('Неверно указана страница');
+            }
+            await this.mongoClient.connect();
+            const db = this.mongoClient.db("db");
+            const collection = db.collection("goods");
+            console.log("Connected successfully to server", page * 50 - 50, page * 50 + 1);
+            let a = await collection
+                .find(filter)
+                .sort(sort)
+                .skip(page * 50 - 50)
+                .limit(50)
+                .project(project)
+                .toArray();
+            return a;
+        } catch (e) {
+            console.log(`Mongo module error: ${e}`);
+        } finally {
+            await this.mongoClient.close();
+        }
+    }
+
+    // DB Utils
     async findMaxId() {
         try {
             await this.mongoClient.connect();
@@ -86,19 +147,9 @@ class Database {
             await this.mongoClient.close();
         }
     }
-    async createMany(dbName, collectionName, dataArr) {
-        try {
-            await this.mongoClient.connect();
-            const collection = this.mongoClient.db(dbName).collection(collectionName);
-            console.log("Connected successfully to server");
-            await collection.insertMany(dataArr);
-        } catch (e) {
-            console.log(`Mongo module error: ${e}`);
-        } finally {
-            await this.mongoClient.close();
-        }
+    async deleteManyByID(from, to) {
+        await this.deleteMany("db", "goods", {id: {$gt: from, $lt: to}});
     }
-
     async compareUuid(uuid) {
         if (uuid) {
             let data = await this.read("db", "users", {UUID: uuid})
@@ -115,7 +166,7 @@ class Database {
             let passHashed = crypto.pbkdf2Sync(pass, data.salt, 10000, 512, "sha512").toString("hex");
             if (passHashed === data.password) {
                 let newUUID = crypto.randomUUID();
-                await this.update("db", "users", {_id: ObjectId(data._id)}, {$set: {UUID: newUUID}});
+                await this.update("db", "users", {_id: ObjectId(data._id)}, {UUID: newUUID});
                 return newUUID;
             } else {
                 return false;
@@ -128,28 +179,26 @@ class Database {
     async createUser(args) {
         if (args.login && args.password) {
             if (!await this.read("db", "users", {login: args.login})) {
-                let data = {};
+                let user = {};
                 for (let i in args) {
-                    if (i) data[i] = args[i];
+                    if (i) user[i] = args[i];
                 }
-                data.login = args.login;
-                data.salt = crypto.randomBytes(128).toString("base64");
-                data.password = crypto.pbkdf2Sync(args.password, data.salt, 10000, 512, "sha512").toString("hex");
-                data.dateOfCreation = new Date().toISOString();
-                data.UUID = crypto.randomUUID();
-                await this.create("db", "users", data);
-                return data.UUID;
+                user.login = args.login;
+                user.salt = crypto.randomBytes(128).toString("base64");
+                user.password = crypto.pbkdf2Sync(args.password, user.salt, 10000, 512, "sha512").toString("hex");
+                user.dateOfCreation = new Date().toISOString();
+                user.UUID = crypto.randomUUID();
+                await this.create("db", "users", user);
+                return user.UUID;
             } else {
                 console.log("Mongo module error: user exists");
                 return "Mongo module error: user exists";
             }
         } else {
-            console.log("Mongo module error: wrong data")
-            return "Mongo module error: wrong data";
+            console.log("Mongo module error: wrong user data")
+            return "Mongo module error: wrong user data";
         }
     }
-    async addInCollection(json) {
-        await this.create("db", "goods", json);
-    }
 }
+
 module.exports = Database;
