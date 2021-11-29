@@ -13,12 +13,13 @@ router.get('/', (req, res) => {
         if (data) {
             database.findMaxId().then(count => {
                 res.render('admin', {
+                    title: 'Курсовая',
                     login: user.login,
                     dbCount: count,
                 });
             });
         } else {
-            res.render('login');
+            res.render('login', {title: 'Вход в систему'});
         }
     })
 });

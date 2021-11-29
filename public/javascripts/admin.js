@@ -53,6 +53,7 @@ function displayError(text = "Ошибка", color = "red") {
     }
 }
 function printHtmlTable(data) {
+    console.log(data);
     document.getElementById("table").innerText = "";
     for (let i in data) {
         let tableRow = document.createElement("tr");
@@ -118,7 +119,7 @@ function addCollapsedRow(data, placeInTableArr) {
     a1.dataset.bsTarget = "#modalUpdate";
     a1.addEventListener('click', e => {
         e.preventDefault();
-        updateItem(data.id, e);
+        updateItem(data.id, placeInTableArr);
     })
     linksDiv.append(a1);
     linksDiv.append(document.createElement('br'))
@@ -142,15 +143,18 @@ function addCollapsedRow(data, placeInTableArr) {
     tr.append(td);
     return tr;
 }
-function updateItem(dataID) {
+
+function updateItem(dataID, dataPlaceInTableArr) {
     let form = document.forms.modalUpdateForm;
     form.reset();
     for (let key of goodsOrder) {
-        form.querySelector(`input[name=${key}]`).value = table[dataID][key] ?? '';
+        form.querySelector(`input[name=${key}]`).value = table[dataPlaceInTableArr][key] ?? '';
     }
-    form.querySelector("textarea[name=description]").value = table[dataID]['description'] ?? '';
-    form.querySelector("textarea[name=specifications]").value = table[dataID]['specifications'] ?? '';
+    form.querySelector("input[name=placeInArr]").value = dataPlaceInTableArr;
+    form.querySelector("textarea[name=description]").value = table[dataPlaceInTableArr]['description'] ?? '';
+    form.querySelector("textarea[name=specifications]").value = table[dataPlaceInTableArr]['specifications'] ?? '';
 }
+
 function deleteItem(dataID, dataPlaceInTableArr) {
     let form = document.forms.modalDeleteForm;
     form.querySelector('input[name=id]').value = dataID;
@@ -248,6 +252,7 @@ document.getElementById('btnUpdateProduct').addEventListener("click", () => {
     }
     form.querySelector("input[name=name]").classList.remove('redBorder');
     let jsonData = {
+        placeInTableArr: form.querySelector("input[name=placeInArr]").value,
         id: form.querySelector("input[name=id]").value,
         name: form.querySelector("input[name=name]").value,
         manufacturer: form.querySelector("input[name=manufacturer]").value,
@@ -262,13 +267,14 @@ document.getElementById('btnUpdateProduct').addEventListener("click", () => {
         description: form.querySelector("textarea[name=description]").value,
         specifications: form.querySelector("textarea[name=specifications]").value,
     }
+    console.log(jsonData);
     getFetchData('/app/update', jsonData, (err, data) => {
         if (err) {
             displayError(err)
         } else {
             displayError(data.message, data.color);
             if (data.status === 'ok') {
-                table[jsonData.id] = jsonData;
+                table[jsonData.placeInTableArr] = jsonData;
                 printHtmlTable(table);
             }
         }
@@ -343,7 +349,6 @@ document.querySelectorAll('th').forEach(el => {
 })
 // live search
 document.querySelector('input[type="search"]').addEventListener('input', (el) => {
-    console.log(el.target.value);
     if (el.target.value.length > 2) {
         gettable(el.target.value);
     } else {
