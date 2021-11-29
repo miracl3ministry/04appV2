@@ -53,7 +53,6 @@ function displayError(text = "Ошибка", color = "red") {
     }
 }
 function printHtmlTable(data) {
-    console.log(data);
     document.getElementById("table").innerText = "";
     for (let i in data) {
         let tableRow = document.createElement("tr");
@@ -267,7 +266,6 @@ document.getElementById('btnUpdateProduct').addEventListener("click", () => {
         description: form.querySelector("textarea[name=description]").value,
         specifications: form.querySelector("textarea[name=specifications]").value,
     }
-    console.log(jsonData);
     getFetchData('/app/update', jsonData, (err, data) => {
         if (err) {
             displayError(err)

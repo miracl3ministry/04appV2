@@ -24,7 +24,6 @@ router.get('/', (req, res) => {
     })
 });
 router.post("/login", jsonParser, (req, res) => {
-    console.log(req.body);
     if (!req.body) return res.sendStatus(400)
     if (req.body.login && req.body.password) {
         isLogin(req.body.login, req.body.password, (err, ans) => {

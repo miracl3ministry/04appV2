@@ -130,7 +130,6 @@ router.post('/uploadxlsx', (req, res) => {
                 console.log(err);
                 res.render('uploadxlsx', {title: "Ошибка: " + err.message});
             } else {
-                console.log('1');
                 parseXlsx(fileName);
                 res.render('uploadxlsx', {title: "Файл загружен, идет добавление в базу данных."});
             }
@@ -217,7 +216,6 @@ async function addInDb(body, callback) {
 async function updateData(body, callback) {
     try {
         body.id = Number(body.id);
-        console.log(body);
         await database.update("db", "goods", {id: body.id}, body);
         callback(null);
     } catch (e) {
@@ -238,7 +236,6 @@ async function deleteData(id, callback) {
 async function parseXlsx(fileName) {
     xlsIsParsed = false;
     let path = `${__dirname.slice(0, -6)}public/xls/${fileName}`;
-    console.log(__dirname.slice(0, -6), path);
     let maxId = await database.findMaxId();
     let arr = await excelParser.start(path, maxId);
     database.createMany("db", "goods", arr)
