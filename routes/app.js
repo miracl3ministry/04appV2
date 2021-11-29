@@ -156,7 +156,7 @@ router.post('/unloadxlsx', (req, res) => {
             if (err) {
                 res.send({message: err.message, color: 'red', status: "error"})
             } else {
-                let fileName = path.substring(path.lastIndexOf('\\') + 1);
+                let fileName = path.substring(path.lastIndexOf('/') + 1);
                 res.send({message: fileName, color: 'green', status: "ok"});
                 setTimeout(() => {
                     fs.unlink(path, () => console.log('Очищено: ', path));
@@ -237,14 +237,15 @@ async function deleteData(id, callback) {
 }
 async function parseXlsx(fileName) {
     xlsIsParsed = false;
-    let path = `${__dirname.replace('\\routes', '')}\\public\\xls\\${fileName}`;
+    let path = `${__dirname.slice(0, -6)}public/xls/${fileName}`;
+    console.log(__dirname.slice(0, -6), path);
     let maxId = await database.findMaxId();
     let arr = await excelParser.start(path, maxId);
     database.createMany("db", "goods", arr)
         .catch(err => console.log(err))
         .then(() => {
             xlsIsParsed = true;
-            fs.unlink(__dirname.slice(0, -6) + 'public\\xls\\' + fileName, (err, a) => {
+            fs.unlink(__dirname.slice(0, -6) + 'public/xls/' + fileName, (err, a) => {
                 console.log(err, a);
             });
         })
@@ -252,8 +253,8 @@ async function parseXlsx(fileName) {
 async function createXls(params, callback) {
     try {
         let arr = await database.read("db", "goods", user.lastQueryFilter, {_id: 0});
-        let path = `${__dirname.slice(0, -6)}\\public\\xls\\Книга1.xlsx`;
-        excelParser.write(path, arr, callback);
+        let path = `${__dirname.slice(0, -7)}/public/xls/Книга1.xlsx`;
+        await excelParser.write(path, arr, callback);
     } catch (e) {
         console.log(e);
         callback(e);
