@@ -124,14 +124,14 @@ router.get('/deletemany/:from&:to', (req, res) => {
 router.post('/uploadxlsx', (req, res) => {
     if (req.files.file) {
         let fileName = req.files.file.name;
-        let uploadPath = __dirname.slice(0, -6) + 'public\\xls\\' + fileName;
+        let uploadPath = __dirname.slice(0, -6) + 'public/xls/' + fileName;
         req.files.file.mv(uploadPath, (err) => {
             if (err) {
                 console.log(err);
                 res.render('uploadxlsx', {title: "Ошибка: " + err.message});
             } else {
-                parseXlsx(fileName);
                 res.render('uploadxlsx', {title: "Файл загружен, идет добавление в базу данных."});
+                parseXlsx(fileName);
             }
         })
     } else {
@@ -142,7 +142,11 @@ router.post('/uploadxlsx/awaitupload', (req, res) => {
     if (xlsIsParsed) {
         res.send("Reload");
     } else {
-        waitTimeoutXlsParse(200, () => {
+        waitTimeoutXlsParse(200, (err, ans) => {
+            if (err) {
+                console.log(err);
+                res.send({title: "Ошибка: " + err.message});
+            }
             res.send("Reload");
             xlsIsParsed = true;
         })

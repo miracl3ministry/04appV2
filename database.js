@@ -9,6 +9,7 @@ class Database {
         }
         this.uri = uri ?? "mongodb://localhost:27017/";
         this.mongoClient = new MongoClient(this.uri);
+        this.queue = [];
         Database.instance = this;
     }
 
@@ -22,7 +23,7 @@ class Database {
         } catch (e) {
             console.log(`Mongo module error: ${e}`);
         } finally {
-            await this.mongoClient.close();
+            // await this.mongoClient.close();
         }
     }
     async read(dbName, collectionName, filter, project = null) {
@@ -44,7 +45,7 @@ class Database {
         } catch (e) {
             console.log(`Mongo module error: ${e}`);
         } finally {
-            await this.mongoClient.close();
+            // await this.mongoClient.close();
         }
     }
     async update(dbName, collectionName, filter, data) {
@@ -57,7 +58,7 @@ class Database {
         } catch (e) {
             console.log(`Mongo module error: ${e}`);
         } finally {
-            await this.mongoClient.close();
+            // await this.mongoClient.close();
         }
     }
     async delete(dbName, collectionName, filter) {
@@ -70,7 +71,7 @@ class Database {
         } catch (e) {
             console.log(`Mongo module error: ${e}`);
         } finally {
-            await this.mongoClient.close();
+            // await this.mongoClient.close();
         }
     }
     async createMany(dbName, collectionName, dataArr) {
@@ -78,22 +79,42 @@ class Database {
             await this.mongoClient.connect();
             const collection = await this.mongoClient.db(dbName).collection(collectionName);
             console.log("Connected successfully to server");
-            // let len = dataArr.length;
-            // for (let i = 0; i < len; i += 1000) {
-            //     let arr = dataArr.slice(i, i+1000);
-            //     console.log(arr.length, i, i+1000);
-            //     collection.insertMany(arr).then((err, a) => {
-            //         console.log(err, a);
-            //     });
-            // }
+            /*
+            Тут можно использовать два варианта добавления большого кол-ва документов
+            Если количество документов < 100 000 и MongoBulk работает, то можно добавлять просто через
             await collection.insertMany(dataArr);
+            это работает быстрее
+
+            В ином случае можно добавлять документы с разбивкой по 1000
+             */
+            let len = dataArr.length;
+            for (let i = 0; i < len; i += 1000) {
+                let arr = dataArr.slice(i, i + 1000);
+                this.queue.push(await collection.insertMany(arr));
+            }
+            await this.runQueue();
+            // await collection.insertMany(dataArr);
             return 0;
         } catch (e) {
             console.log(`Mongo module error: ${e}`);
         } finally {
-            await this.mongoClient.close();
+            // await this.mongoClient.close();
         }
     }
+
+    async runQueue() {
+        console.log(typeof this.runQueue);
+        if (this.queue.length > 0) {
+            let func = this.queue.shift();
+            console.log('in queue', func, typeof func, this.queue.length);
+            if (typeof func === 'function') {
+                await func().then(await this.runQueue());
+            }
+        } else {
+            // console.log('end');
+        }
+    }
+
     async deleteMany(dbName, collectionName, filter) {
         try {
             await this.mongoClient.connect();
@@ -104,7 +125,7 @@ class Database {
         } catch (e) {
             console.log(`Mongo module error: ${e}`);
         } finally {
-            await this.mongoClient.close();
+            // await this.mongoClient.close();
         }
     }
     async readPage(filter, project, sort = {'id': 1}, page = 1) {
@@ -127,7 +148,7 @@ class Database {
         } catch (e) {
             console.log(`Mongo module error: ${e}`);
         } finally {
-            await this.mongoClient.close();
+            // await this.mongoClient.close();
         }
     }
 
