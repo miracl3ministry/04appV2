@@ -90,7 +90,7 @@ class Database {
             let len = dataArr.length;
             for (let i = 0; i < len; i += 1000) {
                 let arr = dataArr.slice(i, i + 1000);
-                this.queue.push(await collection.insertMany(arr));
+                this.queue.push(collection.insertMany(arr));
             }
             await this.runQueue();
             // await collection.insertMany(dataArr);
@@ -103,13 +103,10 @@ class Database {
     }
 
     async runQueue() {
-        console.log(typeof this.runQueue);
         if (this.queue.length > 0) {
             let func = this.queue.shift();
             console.log('in queue', func, typeof func, this.queue.length);
-            if (typeof func === 'function') {
-                await func().then(await this.runQueue());
-            }
+            await func().then(await this.runQueue());
         } else {
             // console.log('end');
         }
